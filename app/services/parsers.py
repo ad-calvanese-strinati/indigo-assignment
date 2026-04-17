@@ -12,7 +12,9 @@ class ParsedSection:
     section_heading: str | None = None
 
 
-def parse_document(content: bytes, content_type: str, filename: str) -> list[ParsedSection]:
+def parse_document(
+    content: bytes, content_type: str, filename: str
+) -> list[ParsedSection]:
     lowered = filename.lower()
     if content_type == "application/pdf" or lowered.endswith(".pdf"):
         return _parse_pdf(content)
@@ -25,7 +27,9 @@ def _parse_pdf(content: bytes) -> list[ParsedSection]:
     for index, page in enumerate(reader.pages, start=1):
         page_text = (page.extract_text() or "").strip()
         if page_text:
-            sections.extend(_split_into_structured_sections(page_text, page_number=index))
+            sections.extend(
+                _split_into_structured_sections(page_text, page_number=index)
+            )
     return sections
 
 
@@ -34,7 +38,9 @@ def _parse_text(content: bytes) -> list[ParsedSection]:
     return _split_into_structured_sections(text) if text else []
 
 
-def _split_into_structured_sections(text: str, page_number: int | None = None) -> list[ParsedSection]:
+def _split_into_structured_sections(
+    text: str, page_number: int | None = None
+) -> list[ParsedSection]:
     lines = [line.strip() for line in text.splitlines()]
     sections: list[ParsedSection] = []
     current_heading: str | None = None
@@ -95,14 +101,16 @@ def _looks_like_heading(line: str) -> bool:
     if re.match(r"^\d+(\.\d+)*\s+[A-ZÀ-ÖØ-Ý]", normalized):
         return True
 
-    if re.match(r"^(chapter|capitolo|section|sezione|appendix|appendice)\b", normalized, re.IGNORECASE):
+    if re.match(
+        r"^(chapter|capitolo|section|sezione|appendix|appendice)\b",
+        normalized,
+        re.IGNORECASE,
+    ):
         return True
 
     letters = [char for char in normalized if char.isalpha()]
     uppercase_ratio = (
-        sum(1 for char in letters if char.isupper()) / len(letters)
-        if letters
-        else 0
+        sum(1 for char in letters if char.isupper()) / len(letters) if letters else 0
     )
     titlecase_ratio = sum(1 for word in words if word[:1].isupper()) / len(words)
 

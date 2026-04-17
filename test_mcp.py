@@ -10,7 +10,6 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-
 DEFAULT_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000/mcp/")
 DEFAULT_TOKEN = os.getenv("MCP_AUTH_TOKEN", "change-me")
 DEFAULT_PROTOCOL_VERSION = os.getenv("MCP_PROTOCOL_VERSION", "2025-03-26")
@@ -47,7 +46,9 @@ class McpClient:
             headers = {key: value for key, value in error.headers.items()}
             return error.code, headers, raw_body
 
-    def rpc(self, method: str, params: dict[str, Any], request_id: int) -> dict[str, Any]:
+    def rpc(
+        self, method: str, params: dict[str, Any], request_id: int
+    ) -> dict[str, Any]:
         status, headers, body = self.post(
             {
                 "jsonrpc": "2.0",
@@ -78,7 +79,9 @@ class McpClient:
             ) from exc
 
         if "error" in payload:
-            raise RuntimeError(f"MCP error for {method}: {json.dumps(payload['error'], indent=2)}")
+            raise RuntimeError(
+                f"MCP error for {method}: {json.dumps(payload['error'], indent=2)}"
+            )
 
         return payload
 
@@ -102,7 +105,9 @@ def list_tools(client: McpClient) -> dict[str, Any]:
     return client.rpc("tools/list", {}, request_id=2)
 
 
-def call_tool(client: McpClient, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+def call_tool(
+    client: McpClient, tool_name: str, arguments: dict[str, Any]
+) -> dict[str, Any]:
     return client.rpc(
         "tools/call",
         {
@@ -138,7 +143,9 @@ def parse_args() -> argparse.Namespace:
         help="Operation to run against the MCP server.",
     )
     parser.add_argument("--url", default=DEFAULT_URL, help="MCP server URL.")
-    parser.add_argument("--token", default=DEFAULT_TOKEN, help="Bearer token for MCP auth.")
+    parser.add_argument(
+        "--token", default=DEFAULT_TOKEN, help="Bearer token for MCP auth."
+    )
     parser.add_argument(
         "--protocol-version",
         default=DEFAULT_PROTOCOL_VERSION,

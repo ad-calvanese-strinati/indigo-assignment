@@ -82,10 +82,16 @@ async def search(
     limit: int = settings.default_search_limit,
     min_score: float = 0.0,
 ) -> dict[str, object]:
-    logger.info("mcp.search invoked query=%r limit=%s min_score=%s", query, limit, min_score)
+    logger.info(
+        "mcp.search invoked query=%r limit=%s min_score=%s", query, limit, min_score
+    )
     async with session_scope() as session:
         response = await SearchService(session).search(query=query, limit=limit)
-        filtered = [result.model_dump() for result in response.results if result.score >= min_score]
+        filtered = [
+            result.model_dump()
+            for result in response.results
+            if result.score >= min_score
+        ]
         return {"query": query, "total_results": len(filtered), "results": filtered}
 
 
@@ -110,8 +116,14 @@ async def search_by_tag(
         min_score,
     )
     async with session_scope() as session:
-        response = await SearchService(session).search(query=query, limit=limit, tags=tags)
-        filtered = [result.model_dump() for result in response.results if result.score >= min_score]
+        response = await SearchService(session).search(
+            query=query, limit=limit, tags=tags
+        )
+        filtered = [
+            result.model_dump()
+            for result in response.results
+            if result.score >= min_score
+        ]
         return {
             "query": query,
             "applied_tags": tags,
@@ -146,7 +158,11 @@ async def search_by_document(
             limit=limit,
             document_identifiers=document_identifiers,
         )
-        filtered = [result.model_dump() for result in response.results if result.score >= min_score]
+        filtered = [
+            result.model_dump()
+            for result in response.results
+            if result.score >= min_score
+        ]
         return {
             "query": query,
             "applied_document_identifiers": document_identifiers,

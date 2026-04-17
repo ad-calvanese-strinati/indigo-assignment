@@ -14,14 +14,18 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     embeddings: list[list[float]] = []
     for batch in _batch_texts(texts):
         try:
-            response = await client.embeddings.create(model=settings.embedding_model, input=batch)
+            response = await client.embeddings.create(
+                model=settings.embedding_model, input=batch
+            )
         except BadRequestError as exc:
             message = "The document is too large to embed in its current form."
             if getattr(exc, "body", None):
                 api_message = exc.body.get("error", {}).get("message")
                 if api_message:
                     message = f"Embedding request rejected: {api_message}"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=message
+            ) from exc
         except APIError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -43,7 +47,8 @@ def _batch_texts(texts: list[str]) -> list[list[str]]:
         would_exceed_inputs = len(current_batch) >= settings.embedding_batch_max_inputs
         would_exceed_tokens = (
             bool(current_batch)
-            and current_batch_tokens + estimated_tokens > settings.embedding_batch_max_tokens
+            and current_batch_tokens + estimated_tokens
+            > settings.embedding_batch_max_tokens
         )
 
         if would_exceed_inputs or would_exceed_tokens:

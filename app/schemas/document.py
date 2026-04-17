@@ -17,7 +17,9 @@ class DocumentRead(BaseModel):
 
 class DocumentCreateResult(BaseModel):
     document: DocumentRead
-    created: bool = Field(description="False when the upload matched an existing checksum.")
+    created: bool = Field(
+        description="False when the upload matched an existing checksum."
+    )
 
 
 class TagListResponse(BaseModel):

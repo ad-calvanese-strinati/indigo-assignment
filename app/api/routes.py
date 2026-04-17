@@ -17,7 +17,11 @@ async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@router.post("/documents", response_model=DocumentCreateResult, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/documents",
+    response_model=DocumentCreateResult,
+    status_code=status.HTTP_201_CREATED,
+)
 async def upload_document(
     file: UploadFile = File(...),
     tags: str = Form(default=""),
@@ -30,17 +34,23 @@ async def upload_document(
 
 
 @router.get("/documents", response_model=list[DocumentRead])
-async def list_documents(session: AsyncSession = Depends(get_db_session)) -> list[DocumentRead]:
+async def list_documents(
+    session: AsyncSession = Depends(get_db_session),
+) -> list[DocumentRead]:
     service = DocumentService(session)
     return await service.list_documents()
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(document_id: str, session: AsyncSession = Depends(get_db_session)) -> None:
+async def delete_document(
+    document_id: str, session: AsyncSession = Depends(get_db_session)
+) -> None:
     service = DocumentService(session)
     deleted = await service.delete_document(document_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found."
+        )
 
 
 @router.get("/tags", response_model=TagListResponse)

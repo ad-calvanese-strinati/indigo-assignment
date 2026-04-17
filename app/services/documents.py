@@ -18,7 +18,9 @@ class DocumentService:
         self.session = session
         self.repository = DocumentRepository(session)
 
-    async def upload(self, upload_file: UploadFile, tags: list[str]) -> DocumentCreateResult:
+    async def upload(
+        self, upload_file: UploadFile, tags: list[str]
+    ) -> DocumentCreateResult:
         payload = await upload_file.read()
         checksum = hashlib.sha256(payload).hexdigest()
         existing = await self.repository.get_by_checksum(checksum)
@@ -28,7 +30,9 @@ class DocumentService:
                 created=False,
             )
 
-        sections = parse_document(payload, upload_file.content_type or "", upload_file.filename or "document")
+        sections = parse_document(
+            payload, upload_file.content_type or "", upload_file.filename or "document"
+        )
         if not sections:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,7 +58,9 @@ class DocumentService:
         )
         await self.repository.add(document)
 
-        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=True)):
+        for index, (chunk, embedding) in enumerate(
+            zip(chunks, embeddings, strict=True)
+        ):
             self.session.add(
                 DocumentChunk(
                     document_id=document.id,
@@ -68,7 +74,9 @@ class DocumentService:
 
         await self.session.commit()
         await self.session.refresh(document)
-        return DocumentCreateResult(document=DocumentRead.model_validate(document), created=True)
+        return DocumentCreateResult(
+            document=DocumentRead.model_validate(document), created=True
+        )
 
     async def list_documents(self) -> list[Document]:
         return await self.repository.list_all()

@@ -48,17 +48,23 @@ async def protect_mcp_and_validate_origin(request: Request, call_next):
     if request.url.path.startswith("/mcp"):
         origin = request.headers.get("origin")
         if origin and origin not in settings.app_allowed_origins:
-            return JSONResponse(status_code=403, content={"detail": "Origin not allowed."})
+            return JSONResponse(
+                status_code=403, content={"detail": "Origin not allowed."}
+            )
 
         auth_header = request.headers.get("authorization")
         api_key = request.headers.get("x-api-key")
         expected = settings.mcp_auth_token
         values = [auth_header, api_key]
         allowed = any(
-            value == expected or (value and value.startswith("Bearer ") and value[7:].strip() == expected)
+            value == expected
+            or (value and value.startswith("Bearer ") and value[7:].strip() == expected)
             for value in values
         )
         if not allowed:
-            return JSONResponse(status_code=401, content={"detail": "Missing or invalid authentication token."})
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid authentication token."},
+            )
 
     return await call_next(request)

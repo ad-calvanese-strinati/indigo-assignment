@@ -14,7 +14,9 @@ settings = get_settings()
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     document_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False),
         ForeignKey("documents.id", ondelete="CASCADE"),
@@ -25,6 +27,8 @@ class DocumentChunk(Base):
     page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     section_heading: Mapped[str | None] = mapped_column(String(255), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dimension), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(
+        Vector(settings.embedding_dimension), nullable=False
+    )
 
     document = relationship("Document", back_populates="chunks")

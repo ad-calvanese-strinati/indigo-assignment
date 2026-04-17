@@ -45,11 +45,22 @@ class SearchService:
         tags: list[str] | None = None,
         document_identifiers: list[str] | None = None,
     ) -> SearchResponse:
-        search_limit = max(1, min(limit or settings.default_search_limit, settings.max_search_limit))
+        search_limit = max(
+            1, min(limit or settings.default_search_limit, settings.max_search_limit)
+        )
         candidate_limit = max(search_limit, settings.hybrid_candidate_limit)
-        normalized_tags = sorted({tag.strip().lower() for tag in tags or [] if tag.strip()}) or None
+        normalized_tags = (
+            sorted({tag.strip().lower() for tag in tags or [] if tag.strip()}) or None
+        )
         normalized_document_identifiers = (
-            sorted({identifier.strip() for identifier in document_identifiers or [] if identifier.strip()}) or None
+            sorted(
+                {
+                    identifier.strip()
+                    for identifier in document_identifiers or []
+                    if identifier.strip()
+                }
+            )
+            or None
         )
 
         logger.info(
@@ -82,7 +93,9 @@ class SearchService:
         )
 
         fused = _fuse_ranked_candidates(dense_rows, lexical_rows)
-        filtered_candidates = [candidate for candidate in fused if _is_candidate_relevant(candidate)]
+        filtered_candidates = [
+            candidate for candidate in fused if _is_candidate_relevant(candidate)
+        ]
         top_candidates = filtered_candidates[:search_limit]
         results = [
             SearchResult(
@@ -120,14 +133,18 @@ class SearchService:
         tags: list[str] | None,
         document_identifiers: list[str] | None,
     ) -> list[tuple[DocumentChunk, Document, float]]:
-        similarity = (1 - DocumentChunk.embedding.cosine_distance(query_embedding)).label("dense_score")
+        similarity = (
+            1 - DocumentChunk.embedding.cosine_distance(query_embedding)
+        ).label("dense_score")
         stmt: Select[tuple[DocumentChunk, Document, float]] = (
             select(DocumentChunk, Document, similarity)
             .join(Document, Document.id == DocumentChunk.document_id)
             .order_by(similarity.desc())
             .limit(candidate_limit)
         )
-        stmt = _apply_filters(stmt, tags=tags, document_identifiers=document_identifiers)
+        stmt = _apply_filters(
+            stmt, tags=tags, document_identifiers=document_identifiers
+        )
         rows = (await self.session.execute(stmt)).all()
         return [(chunk, document, float(score)) for chunk, document, score in rows]
 
@@ -150,7 +167,9 @@ class SearchService:
             .order_by(rank.desc())
             .limit(candidate_limit)
         )
-        stmt = _apply_filters(stmt, tags=tags, document_identifiers=document_identifiers)
+        stmt = _apply_filters(
+            stmt, tags=tags, document_identifiers=document_identifiers
+        )
         rows = (await self.session.execute(stmt)).all()
         return [(chunk, document, float(score)) for chunk, document, score in rows]
 
@@ -166,7 +185,8 @@ def _apply_filters(
 
     if document_identifiers:
         stmt = stmt.where(
-            (Document.id.in_(document_identifiers)) | (Document.filename.in_(document_identifiers))
+            (Document.id.in_(document_identifiers))
+            | (Document.filename.in_(document_identifiers))
         )
 
     return stmt
@@ -179,13 +199,17 @@ def _fuse_ranked_candidates(
     by_chunk_id: dict[str, RankedCandidate] = {}
 
     for index, (chunk, document, dense_score) in enumerate(dense_rows, start=1):
-        candidate = by_chunk_id.setdefault(chunk.id, RankedCandidate(chunk=chunk, document=document))
+        candidate = by_chunk_id.setdefault(
+            chunk.id, RankedCandidate(chunk=chunk, document=document)
+        )
         candidate.dense_rank = index
         candidate.dense_score = dense_score
         candidate.matched_by.add("dense")
 
     for index, (chunk, document, lexical_score) in enumerate(lexical_rows, start=1):
-        candidate = by_chunk_id.setdefault(chunk.id, RankedCandidate(chunk=chunk, document=document))
+        candidate = by_chunk_id.setdefault(
+            chunk.id, RankedCandidate(chunk=chunk, document=document)
+        )
         candidate.lexical_rank = index
         candidate.lexical_score = lexical_score
         candidate.matched_by.add("lexical")
@@ -206,10 +230,12 @@ def _is_candidate_relevant(candidate: RankedCandidate) -> bool:
         return False
 
     has_strong_lexical_match = (
-        candidate.lexical_score is not None and candidate.lexical_score >= settings.min_lexical_score
+        candidate.lexical_score is not None
+        and candidate.lexical_score >= settings.min_lexical_score
     )
     has_strong_dense_match = (
-        candidate.dense_score is not None and candidate.dense_score >= settings.min_dense_score
+        candidate.dense_score is not None
+        and candidate.dense_score >= settings.min_dense_score
     )
 
     if "lexical" in candidate.matched_by and has_strong_lexical_match:

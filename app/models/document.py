@@ -11,11 +11,17 @@ from app.db.base import Base
 class Document(Base):
     __tablename__ = "documents"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    checksum: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    checksum: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True
+    )
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    tags: Mapped[list[str]] = mapped_column(ARRAY(String(64)), nullable=False, default=list)
+    tags: Mapped[list[str]] = mapped_column(
+        ARRAY(String(64)), nullable=False, default=list
+    )
     upload_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
