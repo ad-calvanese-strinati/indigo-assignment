@@ -23,6 +23,7 @@ flowchart LR
 
 - `FastAPI`: lightweight, typed, easy to share services between REST and MCP layers.
 - `Postgres + pgvector`: one datastore for both relational metadata and semantic search.
+- `Postgres full-text search`: lexical retrieval without introducing another search service.
 - `OpenAI embeddings`: strong default quality, fast to integrate, easy to justify in a take-home assignment.
 - `FastMCP` from the official Python MCP SDK: gives us a standards-aligned MCP server with Streamable HTTP support.
 
@@ -33,6 +34,9 @@ flowchart LR
 - PDF: parsed with `pypdf`, page by page.
 - Text: decoded as UTF-8 plain text.
 - When possible, structured headings are extracted from short title-like lines and stored as `section_heading` on chunks.
+- Chunk-level provenance is exposed in search results through:
+  - `page_number` for PDF chunks
+  - `section_heading` on a best-effort basis for structured documents
 
 ### Chunking Strategy
 
@@ -59,9 +63,45 @@ Why this choice:
 - This avoids request-size failures on large PDFs and makes ingestion more robust.
 - Batch size is configurable through `EMBEDDING_BATCH_MAX_INPUTS` and `EMBEDDING_BATCH_MAX_TOKENS`.
 
+### Retrieval Strategy
+
+- Search uses a hybrid strategy:
+  - dense retrieval with `pgvector`
+  - lexical retrieval with PostgreSQL full-text search
+- The two candidate sets are fused with Reciprocal Rank Fusion (RRF).
+- This improves robustness on both semantic queries and exact-term queries such as acronyms, titles, and policy names.
+- Very weak candidates and low-information chunks are filtered out to reduce garbage results on out-of-domain queries.
+
 ## MCP Tool Design
 
 The server exposes five agent-ready tools:
+
+### MCP Tool Design Rationale
+
+The tool set is intentionally small and decision-oriented rather than CRUD-heavy. The main goal is to help an
+LLM choose the right search scope before retrieval starts.
+
+Why these tools:
+
+- `list_documents` helps the agent discover the available corpus and obtain exact filenames or IDs before narrowing to known sources.
+- `list_tags` helps the agent discover the controlled vocabulary of business domains before using tag filters.
+- `search` is the default exploratory tool when the correct scope is not known yet.
+- `search_by_tag` exists because many enterprise questions are domain-specific, and tag filtering reduces noise significantly.
+- `search_by_document` exists because employees often refer to known manuals, policies, or named guides directly.
+
+Why these parameter choices:
+
+- `query` is always explicit and required on search tools because the agent should always state the retrieval intent clearly.
+- `limit` is optional with defaults to keep tool calls lightweight while still allowing the agent to ask for more context.
+- `min_score` allows the agent to suppress weak matches when it wants to be conservative.
+- `document_identifiers` accepts either exact filenames or document IDs to make the tool usable both after `list_documents` and in cases where the user already knows a filename.
+
+Why no additional MCP tools right now:
+
+- I intentionally did not add a document-read or chunk-read tool because the current search payload already returns enough grounded context for answer synthesis in this assignment.
+- Keeping the tool surface compact reduces decision complexity for the LLM and makes the intended retrieval flow easier to learn:
+  - discover scope with `list_tags` or `list_documents`
+  - search broadly with `search` or narrowly with `search_by_tag` / `search_by_document`
 
 ### `list_documents`
 
@@ -102,7 +142,7 @@ Inputs:
 
 Returns:
 
-- top semantic matches with a short excerpt, full chunk text, source document, tags, score, and provenance
+- top hybrid-ranked matches with a short excerpt, full chunk text, source document, tags, score, and provenance
 
 ### `search_by_tag`
 
@@ -150,7 +190,7 @@ The React app provides the required management interface:
 - `GET /api/documents`: list uploaded documents
 - `DELETE /api/documents/{document_id}`: delete a document
 - `GET /api/tags`: list tags
-- `GET /api/search`: backend search endpoint used for debugging and future frontend integration
+- `POST /api/search`: backend search endpoint used for debugging and future frontend integration
 
 All REST endpoints require authentication through either:
 
@@ -234,12 +274,10 @@ python test_mcp.py call --tool search_by_tag --args '{"query":"remote setup","ta
 
 ## Known Limitations
 
-- Search is dense-vector only for now; hybrid retrieval would be a strong next improvement.
 - No background job queue yet; ingestion runs inline with the upload request.
 - Plain text and PDF are supported, but DOCX/HTML exporters could be added later.
 
 ## Next Steps
 
-- Add hybrid search with BM25 + vector fusion
 - Improve chunking with heading-aware splitting
 - Add automated integration tests against a disposable Postgres instance

@@ -18,6 +18,10 @@ async def lifespan(_: FastAPI):
     async with engine.begin() as connection:
         await connection.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS vector")
         await connection.run_sync(Base.metadata.create_all)
+        await connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_document_chunks_content_fts "
+            "ON document_chunks USING GIN (to_tsvector('simple', content))"
+        )
     async with mcp.session_manager.run():
         yield
 

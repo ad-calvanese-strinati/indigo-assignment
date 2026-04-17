@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { API_BASE_URL, deleteDocument, fetchDocuments, fetchTags, uploadDocument } from "./api";
+import { deleteDocument, fetchDocuments, fetchTags, uploadDocument } from "./api";
 
 const emptyForm = {
   file: null,
@@ -29,6 +29,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const fileInputRef = useRef(null);
 
   async function loadData() {
     setIsLoading(true);
@@ -72,6 +73,9 @@ export default function App() {
           : `${result.document.filename} was already indexed, so the existing document was reused.`,
       );
       setForm(emptyForm);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       await loadData();
     } catch (submitError) {
       setError(submitError.message);
@@ -95,21 +99,6 @@ export default function App() {
 
   return (
     <div className="shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Indigo Assignment</p>
-          <h1>Knowledge base control room</h1>
-          <p className="lede">
-            Upload internal documents, assign tags, and keep the MCP knowledge base ready for
-            retrieval.
-          </p>
-        </div>
-        <div className="hero-card">
-          <span>Backend API</span>
-          <strong>{API_BASE_URL}</strong>
-        </div>
-      </header>
-
       <main className="layout">
         <section className="panel">
           <div className="panel-heading">
@@ -121,6 +110,7 @@ export default function App() {
             <label className="field">
               <span>Document file</span>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".pdf,.txt,text/plain,application/pdf"
                 onChange={(event) =>
@@ -193,7 +183,7 @@ export default function App() {
           {isLoading ? (
             <div className="empty-state">Loading documents...</div>
           ) : documents.length ? (
-            <div className="document-grid">
+            <div className="document-list">
               {documents.map((document) => (
                 <article className="document-card" key={document.id}>
                   <div className="document-meta">

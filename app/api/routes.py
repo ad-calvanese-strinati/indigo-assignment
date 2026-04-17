@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_api_token
+from app.core.logging import logger
 from app.db.session import get_db_session
 from app.schemas.document import DocumentCreateResult, DocumentRead, TagListResponse
-from app.schemas.search import SearchResponse
+from app.schemas.search import SearchRequest, SearchResponse
 from app.services.documents import DocumentService
 from app.services.search import SearchService
 
@@ -48,18 +49,22 @@ async def list_tags(session: AsyncSession = Depends(get_db_session)) -> TagListR
     return TagListResponse(tags=await service.list_tags())
 
 
-@router.get("/search", response_model=SearchResponse)
+@router.post("/search", response_model=SearchResponse)
 async def search_documents(
-    query: str,
-    limit: int | None = None,
-    tags: str | None = None,
-    document_ids: str | None = None,
+    payload: SearchRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> SearchResponse:
+    logger.info(
+        "api.search request query=%r limit=%s tags=%s document_identifiers=%s",
+        payload.query,
+        payload.limit,
+        payload.tags,
+        payload.document_identifiers,
+    )
     service = SearchService(session)
     return await service.search(
-        query=query,
-        limit=limit,
-        tags=tags.split(",") if tags else None,
-        document_identifiers=document_ids.split(",") if document_ids else None,
+        query=payload.query,
+        limit=payload.limit,
+        tags=payload.tags,
+        document_identifiers=payload.document_identifiers,
     )

@@ -23,7 +23,7 @@ def chunk_sections(sections: list[ParsedSection]) -> list[ParsedSection]:
                     end = split_at
 
             chunk_text = normalized[start:end].strip()
-            if chunk_text:
+            if chunk_text and _is_meaningful_chunk(chunk_text):
                 chunks.append(
                     ParsedSection(
                         text=chunk_text,
@@ -37,3 +37,14 @@ def chunk_sections(sections: list[ParsedSection]) -> list[ParsedSection]:
             start = max(0, end - overlap)
 
     return chunks
+
+
+def _is_meaningful_chunk(text: str) -> bool:
+    if len(text) < settings.min_chunk_characters:
+        return False
+
+    alpha_characters = sum(1 for char in text if char.isalpha())
+    if alpha_characters < settings.min_chunk_alpha_characters:
+        return False
+
+    return True

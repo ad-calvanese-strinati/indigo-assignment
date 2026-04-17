@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     chunk_overlap_chars: int = Field(default=200, alias="CHUNK_OVERLAP_CHARS")
     default_search_limit: int = Field(default=5, alias="DEFAULT_SEARCH_LIMIT")
     max_search_limit: int = Field(default=10, alias="MAX_SEARCH_LIMIT")
+    hybrid_candidate_limit: int = Field(default=20, alias="HYBRID_CANDIDATE_LIMIT")
+    hybrid_rrf_k: int = Field(default=60, alias="HYBRID_RRF_K")
+    min_chunk_characters: int = Field(default=40, alias="MIN_CHUNK_CHARACTERS")
+    min_chunk_alpha_characters: int = Field(default=12, alias="MIN_CHUNK_ALPHA_CHARACTERS")
+    min_dense_score: float = Field(default=0.45, alias="MIN_DENSE_SCORE")
+    min_lexical_score: float = Field(default=0.02, alias="MIN_LEXICAL_SCORE")
     embedding_batch_max_inputs: int = Field(default=128, alias="EMBEDDING_BATCH_MAX_INPUTS")
     embedding_batch_max_tokens: int = Field(default=200000, alias="EMBEDDING_BATCH_MAX_TOKENS")
 
