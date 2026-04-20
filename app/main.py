@@ -8,7 +8,9 @@ from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import engine
-from app.mcp.server import mcp
+
+# from app.mcp.server import mcp
+from app.mcp.router import router as mcp_router
 
 settings = get_settings()
 
@@ -22,8 +24,8 @@ async def lifespan(_: FastAPI):
             "CREATE INDEX IF NOT EXISTS idx_document_chunks_content_fts "
             "ON document_chunks USING GIN (to_tsvector('simple', content))"
         )
-    async with mcp.session_manager.run():
-        yield
+    # async with mcp.session_manager.run():
+    yield
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -35,6 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+app.include_router(mcp_router, prefix="/mcp")
 
 # @app.middleware("http")
 # async def fix_host_header(request: Request, call_next):
@@ -47,7 +50,7 @@ app.include_router(api_router)
 #     ]
 #     return await call_next(request)
 
-app.mount("/mcp", mcp.streamable_http_app())
+# app.mount("/mcp", mcp.streamable_http_app())
 
 
 @app.get("/healthz")
