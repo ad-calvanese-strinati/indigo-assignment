@@ -36,16 +36,16 @@ app.add_middleware(
 )
 app.include_router(api_router)
 
-@app.middleware("http")
-async def fix_host_header(request: Request, call_next):
-    # forza host corretto per MCP
-    request.scope["headers"] = [
-        (k, v)
-        if k != b"host"
-        else (b"host", b"localhost")
-        for (k, v) in request.scope["headers"]
-    ]
-    return await call_next(request)
+# @app.middleware("http")
+# async def fix_host_header(request: Request, call_next):
+#     # forza host corretto per MCP
+#     request.scope["headers"] = [
+#         (k, v)
+#         if k != b"host"
+#         else (b"host", b"localhost")
+#         for (k, v) in request.scope["headers"]
+#     ]
+#     return await call_next(request)
 
 app.mount("/mcp", mcp.streamable_http_app())
 
