@@ -44,6 +44,19 @@ async def mcp_endpoint(request: Request):
             )
 
         elif method == "search_by_tag":
+            if "query" not in params or "tags" not in params:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {
+                            "code": -32602,
+                            "message": "Missing required params: query, tags",
+                        },
+                    },
+                )
+
             result = await search_by_tag_tool(
                 query=params["query"],
                 tags=params["tags"],
