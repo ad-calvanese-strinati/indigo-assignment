@@ -32,7 +32,7 @@ I honestly have no clear idea. It feels like navigating without a map.
 
 Sometimes I get the impression that my role might become unnecessary; other times it feels like it’s just “more of the same”, only with different labels.
 
-I’d say I’m prepared to change direction if software engineering eventually reaches a point where human involvement is no longer needed—just like many professions have disappeared over time.
+I’d say I’m prepared to change direction if software engineering eventually reaches a point where human involvement is no longer needed, just like many professions have disappeared over time.
 
 Being “prepared” doesn’t mean I already know what I’ll do next, or that it will be easy, but I’ve accepted the possibility of a radical shift.
 
