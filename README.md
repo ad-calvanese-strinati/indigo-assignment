@@ -11,12 +11,14 @@ The current milestone focuses on the MCP server and the shared backend services 
 
 ## Architecture Overview
 
+The system is designed as a backend-first knowledge base with a shared retrieval layer exposed through both REST APIs and an MCP server.
+
 ```mermaid
 flowchart LR
     UI["React frontend"] --> API["FastAPI REST API"]
     API --> INGEST["Parsing + chunking + embeddings"]
     INGEST --> DB[("Postgres + pgvector")]
-    MCP["MCP server over Streamable HTTP"] --> DB
+    MCP["MCP server (Streamable HTTP)"] --> DB
 ```
 
 ## Why This Stack
@@ -77,9 +79,44 @@ Why this choice:
 - The reranking / rank-fusion step is implemented with Reciprocal Rank Fusion (RRF).
 - With more time, a natural next step would be to replace or augment PostgreSQL lexical ranking with an explicit BM25 implementation while keeping the same hybrid retrieval flow.
 
+
+---
+
+
+### MCP Transport: Streamable HTTP
+
+The MCP server is implemented over **Streamable HTTP using Server-Sent Events (SSE)**.
+
+Why this choice:
+
+- Allows **incremental delivery of results** instead of waiting for full responses
+- Enables **low-latency agent interaction**, especially for retrieval-heavy queries
+- Matches MCP expectations for streaming-capable transports
+- Keeps implementation simple and compatible with standard HTTP infrastructure
+
+Each MCP response is structured as a stream of events:
+
+- `start` → request acknowledged
+- `chunk` → partial result (one document chunk)
+- `metadata` → aggregated info (e.g. total results)
+- `end` → stream completed
+
+This allows clients to process results progressively instead of blocking on full responses.
+
 ## MCP Tool Design
 
-The server exposes five agent-ready tools:
+### Design Philosophy
+
+The MCP tools are designed around **retrieval decision-making**, not data access.
+
+Instead of exposing low-level primitives (e.g. "get chunk", "read document"), the tools guide the agent through a structured retrieval workflow:
+
+1. Discover available scope (`list_tags`, `list_documents`)
+2. Choose retrieval strategy (`search`, `search_by_tag`, `search_by_document`)
+3. Retrieve grounded context for answer synthesis
+
+This reduces tool selection ambiguity and improves agent reliability.
+
 
 ### MCP Tool Design Rationale
 
@@ -195,28 +232,32 @@ The React app provides the required management interface:
 - `GET /api/documents`: list uploaded documents
 - `DELETE /api/documents/{document_id}`: delete a document
 - `GET /api/tags`: list tags
-- `POST /api/search`: backend search endpoint used for debugging and future frontend integration
 
-All REST endpoints require authentication through either:
+All REST endpoints require authentication through:
 
 - `Authorization: Bearer <MCP_AUTH_TOKEN>`
-- `X-API-Key: <MCP_AUTH_TOKEN>`
 
-### MCP Server
+## MCP Server
 
-- Endpoint: `http://localhost:8000/mcp/`
-- Transport: Streamable HTTP
-- Authentication:
-  - `Authorization: Bearer <MCP_AUTH_TOKEN>`
-  - or `X-API-Key: <MCP_AUTH_TOKEN>`
+- Endpoint: `/mcp`
+- Transport: Streamable HTTP (SSE)
+- Protocol: JSON-RPC over HTTP
 
-The server also validates the `Origin` header for MCP requests to reduce DNS rebinding risk.
+### Authentication
+
+Requests must include:
+
+- `Authorization: Bearer <MCP_AUTH_TOKEN>`
+
+### Tool Discovery
+```GET /mcp/tools```
 
 ## Run Locally
 
 1. Copy `.env.example` to `.env`
 2. Add your OpenAI API key
-3. Start the stack:
+3. Configure the environment variables (db, backend url etc.)
+4. Start the stack:
 
 ```bash
 docker compose up --build
@@ -230,35 +271,17 @@ This brings up:
 
 The frontend will be available at:
 
-- `http://localhost:3000`
+- `https://indigo-assignment-production.up.railway.app/`
 
 The API will be available at:
 
-- `http://localhost:8000/api`
+- `https://marvelous-freedom-production-f0e5.up.railway.app/api`
 
 The MCP endpoint will be available at:
 
-- `http://localhost:8000/mcp`
+- `https://marvelous-freedom-production-f0e5.up.railway.app/mcp`
 
-## Requirements Files
 
-The repository includes both packaging styles:
-
-- [requirements.txt](/Users/adrianostrinati/Documents/Lavoro/repository/indigo-assignment/requirements.txt): runtime dependencies
-- [requirements-dev.txt](/Users/adrianostrinati/Documents/Lavoro/repository/indigo-assignment/requirements-dev.txt): runtime + test/lint dependencies
-- [pyproject.toml](/Users/adrianostrinati/Documents/Lavoro/repository/indigo-assignment/pyproject.toml): project metadata and tool configuration
-
-Frontend dependencies live in:
-
-- [frontend/package.json](/Users/adrianostrinati/Documents/Lavoro/repository/indigo-assignment/frontend/package.json)
-
-Local install examples:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-```
 
 ## Railway Deployment Notes
 
@@ -294,25 +317,28 @@ Frontend:
 
 One example with an MCP-compatible client:
 
-- server URL: `http://localhost:8000/mcp/`
+- server URL: `https://marvelous-freedom-production-f0e5.up.railway.app/mcp/`
 - auth header: `Authorization: Bearer <MCP_AUTH_TOKEN>`
 
-For local inspection you can also use the official MCP Inspector against the same endpoint.
 
-For local smoke tests without an external client, you can use [test_mcp.py](/Users/adrianostrinati/Documents/Lavoro/repository/indigo-assignment/test_mcp.py):
-
-```bash
-python test_mcp.py smoke --query "remote setup"
-python test_mcp.py call --tool list_documents
-python test_mcp.py call --tool search_by_tag --args '{"query":"remote setup","tags":["onboarding"],"limit":3}'
-```
+---
 
 ## Known Limitations
 
-- No background job queue yet; ingestion runs inline with the upload request.
-- Plain text and PDF are supported, but DOCX/HTML exporters could be added later.
+- No background job queue: ingestion runs synchronously
+- Chunking is purely character-based (not structure-aware)
+- No reranking model beyond RRF
+- No caching layer for frequent queries
+- Streaming is unidirectional (SSE), not full duplex
+- MCP implementation is custom (not using full SDK transport stack)
 
-## Next Steps
+## What I Would Improve With More Time
 
-- Improve chunking with heading-aware splitting
-- Add automated integration tests against a disposable Postgres instance
+- Replace PostgreSQL lexical ranking with explicit BM25
+- Add cross-encoder reranking for higher precision
+- Implement async ingestion with a job queue
+- Improve chunking with heading-aware or semantic splitting
+- Add caching layer for frequent queries
+- Support additional formats (DOCX, HTML)
+- Add observability (tracing, latency breakdown per retrieval stage)
+- Implement bidirectional streaming (WebSockets) for richer agent interaction
