@@ -60,7 +60,7 @@ async def public_healthcheck() -> dict[str, str]:
 
 @app.middleware("http")
 async def protect_mcp_and_validate_origin(request: Request, call_next):
-    if request.url.path.startswith("/mcp"):
+    if request.url.path.startswith("/mcp") and request.url.path != "/mcp/tools":
         origin = request.headers.get("origin")
         if origin and origin not in settings.app_allowed_origins:
             return JSONResponse(
