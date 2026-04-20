@@ -1,5 +1,13 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-const API_TOKEN = import.meta.env.VITE_API_TOKEN || "change-me";
+const runtimeConfig = window.__APP_CONFIG__ || {};
+
+const API_BASE_URL =
+  runtimeConfig.API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8000/api";
+const API_TOKEN =
+  runtimeConfig.API_TOKEN ||
+  import.meta.env.VITE_API_TOKEN ||
+  "change-me";
 
 function buildHeaders(extra = {}) {
   return {
@@ -8,7 +16,7 @@ function buildHeaders(extra = {}) {
   };
 }
 
-async function request(path, options = {}) {
+async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, options);
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`;
@@ -18,7 +26,6 @@ async function request(path, options = {}) {
         message = payload.detail;
       }
     } catch {
-      // Ignore JSON parsing failures and keep the fallback error message.
     }
     throw new Error(message);
   }
@@ -31,13 +38,13 @@ async function request(path, options = {}) {
 }
 
 export async function fetchDocuments() {
-  return request("/documents", {
+  return apiFetch("/documents", {
     headers: buildHeaders(),
   });
 }
 
 export async function fetchTags() {
-  return request("/tags", {
+  return apiFetch("/tags", {
     headers: buildHeaders(),
   });
 }
@@ -47,7 +54,7 @@ export async function uploadDocument({ file, tags }) {
   body.append("file", file);
   body.append("tags", tags.join(","));
 
-  return request("/documents", {
+  return apiFetch("/documents", {
     method: "POST",
     headers: buildHeaders(),
     body,
@@ -55,7 +62,7 @@ export async function uploadDocument({ file, tags }) {
 }
 
 export async function deleteDocument(documentId) {
-  return request(`/documents/${documentId}`, {
+  return apiFetch(`/documents/${documentId}`, {
     method: "DELETE",
     headers: buildHeaders(),
   });

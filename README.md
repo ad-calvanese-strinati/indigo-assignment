@@ -27,6 +27,8 @@ flowchart LR
 - `OpenAI embeddings`: strong default quality, fast to integrate, easy to justify in a take-home assignment.
 - `FastMCP` from the official Python MCP SDK: gives us a standards-aligned MCP server with Streamable HTTP support.
 
+`Postgres + pgvector` is not necessarily the strongest possible choice for semantic retrieval in absolute terms compared with dedicated search engines or vector databases. I chose it because it offers the best overall tradeoff for this assignment: one operational system can handle structured document metadata, tag and document filters, vector similarity search, and lexical full-text search. This keeps the stack simpler to run locally, easier to reproduce with Docker, and easier to explain during review.
+
 ## Ingestion Design
 
 ### Parsing
@@ -71,6 +73,9 @@ Why this choice:
 - The two candidate sets are fused with Reciprocal Rank Fusion (RRF).
 - This improves robustness on both semantic queries and exact-term queries such as acronyms, titles, and policy names.
 - Very weak candidates and low-information chunks are filtered out to reduce garbage results on out-of-domain queries.
+- The assignment bonus mentions BM25 specifically. In this implementation, the lexical side of hybrid retrieval uses PostgreSQL native full-text ranking rather than a dedicated BM25 engine.
+- The reranking / rank-fusion step is implemented with Reciprocal Rank Fusion (RRF).
+- With more time, a natural next step would be to replace or augment PostgreSQL lexical ranking with an explicit BM25 implementation while keeping the same hybrid retrieval flow.
 
 ## MCP Tool Design
 
@@ -254,6 +259,36 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 ```
+
+## Railway Deployment Notes
+
+The project is structured so it can be deployed to Railway as three services:
+
+- `db`: PostgreSQL with `pgvector`
+- `backend`: FastAPI REST API plus MCP server
+- `frontend`: static React build served by a lightweight Node server
+
+Deployment readiness notes:
+
+- The backend listens on Railway's injected `PORT` variable.
+- The frontend also listens on Railway's injected `PORT` variable.
+- Frontend runtime configuration is injected at container startup through `API_BASE_URL` and `API_TOKEN`, so the backend URL does not need to be baked into the frontend build.
+- For Railway, set `APP_ALLOWED_ORIGINS` on the backend to include the deployed frontend URL and, if needed, the backend public URL.
+- The MCP endpoint should be exposed from the backend service over Railway HTTPS at `/mcp/`.
+
+Recommended Railway environment variables:
+
+Backend:
+
+- `DATABASE_URL`
+- `OPENAI_API_KEY`
+- `MCP_AUTH_TOKEN`
+- `APP_ALLOWED_ORIGINS`
+
+Frontend:
+
+- `API_BASE_URL`
+- `API_TOKEN`
 
 ## Connect an MCP Client
 
