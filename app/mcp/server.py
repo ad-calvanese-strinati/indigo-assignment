@@ -22,11 +22,6 @@ mcp = FastMCP(
     stateless_http=True,
     json_response=True,
     streamable_http_path="/",
-    allowed_hosts=[
-        "localhost",
-        "127.0.0.1",
-        "marvelous-freedom-production-f0e5.up.railway.app",
-    ],
 )
 
 
