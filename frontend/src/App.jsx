@@ -139,7 +139,6 @@ export default function App() {
           <div className="tag-bank">
             <div className="panel-heading compact">
               <h3>Known tags</h3>
-              <p>Useful to stay consistent during upload.</p>
             </div>
             <div className="tag-list">
               {availableTags.length ? (
@@ -174,7 +173,6 @@ export default function App() {
         <section className="panel">
           <div className="panel-heading">
             <h2>Indexed documents</h2>
-            <p>Review filenames, tags, upload time, and chunk counts.</p>
           </div>
 
           {error ? <div className="message error">{error}</div> : null}

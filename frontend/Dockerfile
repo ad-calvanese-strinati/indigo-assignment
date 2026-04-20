@@ -19,4 +19,5 @@ COPY --from=build /frontend/package.json /frontend/package.json
 
 RUN npm install --omit=dev
 
-CMD ["sh", "-c", "node scripts/write-runtime-config.js && npx serve -s dist -l ${PORT:-3000}"]
+# CMD ["sh", "-c", "node scripts/write-runtime-config.js && npx serve -s dist -l ${PORT:-3000}"]
+CMD ["sh", "-c", "node scripts/write-runtime-config.js && npx serve -s dist -l $PORT -n"]
