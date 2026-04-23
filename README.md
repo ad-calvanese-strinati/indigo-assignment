@@ -27,7 +27,6 @@ flowchart LR
 - `Postgres + pgvector`: one datastore for both relational metadata and semantic search.
 - `Postgres full-text search`: lexical retrieval without introducing another search service.
 - `OpenAI embeddings`: strong default quality, fast to integrate, easy to justify in a take-home assignment.
-- `FastMCP` from the official Python MCP SDK: gives us a standards-aligned MCP server with Streamable HTTP support.
 
 `Postgres + pgvector` is not necessarily the strongest possible choice for semantic retrieval in absolute terms compared with dedicated search engines or vector databases. I chose it because it offers the best overall tradeoff for this assignment: one operational system can handle structured document metadata, tag and document filters, vector similarity search, and lexical full-text search. This keeps the stack simpler to run locally, easier to reproduce with Docker, and easier to explain during review.
 
@@ -338,7 +337,6 @@ One example with an MCP-compatible client:
 - Add cross-encoder reranking for higher precision
 - Implement async ingestion with a job queue
 - Improve chunking with heading-aware or semantic splitting
-- Add caching layer for frequent queries
 - Support additional formats (DOCX, HTML)
 - Add observability (tracing, latency breakdown per retrieval stage)
 - Implement bidirectional streaming (WebSockets) for richer agent interaction
